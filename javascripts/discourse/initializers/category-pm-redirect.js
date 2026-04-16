@@ -1,5 +1,4 @@
 import { apiInitializer } from "discourse/lib/api";
-import { getOwner } from "@ember/application";
 
 export default apiInitializer("1.0", (api) => {
   const siteSettings = api.container.lookup("service:site-settings");
@@ -22,28 +21,18 @@ export default apiInitializer("1.0", (api) => {
     return site.categories.find((c) => c.id === parseInt(id, 10));
   }
 
-  function isUserMemberOfGroup(groupName) {
-    if (!currentUser) return false;
-    const groups = currentUser.groups || [];
-    return groups.some(
-      (g) => g.name?.toLowerCase() === groupName?.toLowerCase()
-    );
-  }
-
   function isCategoryRestricted(category) {
     if (!category) return false;
 
+    // Discourse permission levels:
+    // 1 = full (create topics, reply, see)
+    // 2 = reply + see
+    // 3 = see only (readonly)
+    // undefined/null = field not present, meaning user has access (Discourse omits it for accessible categories)
+    // 0 = explicitly no access (restricted, user cannot enter)
     const permission = category.permission;
 
-    if (permission === null || permission === undefined) {
-      return true;
-    }
-
-    if (permission === 0) {
-      return true;
-    }
-
-    return false;
+    return permission === 0;
   }
 
   function buildPmSubject(categoryName) {
@@ -68,11 +57,7 @@ export default apiInitializer("1.0", (api) => {
         body: buildPmBody(categoryName),
       };
 
-      if (useGroup) {
-        params.recipients = pmTarget;
-      } else {
-        params.recipients = pmTarget;
-      }
+      params.recipients = pmTarget;
 
       composer
         .open(params)
