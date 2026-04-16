@@ -1,5 +1,5 @@
 restricted_categories:
-  default: []
+  default: ""
   type: list
 
 pm_target:
