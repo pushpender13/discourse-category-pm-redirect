@@ -1,3 +1,7 @@
+restricted_categories:
+  default: ""
+  type: string
+
 pm_target:
   default: "moderators"
   type: string

@@ -1,18 +1,25 @@
 import { apiInitializer } from "discourse/lib/api";
 
 export default apiInitializer("1.0", (api) => {
-  const siteSettings = api.container.lookup("service:site-settings");
   const site = api.container.lookup("service:site");
-  const currentUser = api.getCurrentUser();
 
   function getSettings() {
     return window.categoryPmRedirectSettings || {};
   }
 
+  function getRestrictedSlugs() {
+    const settings = getSettings();
+    const raw = settings.restrictedCategories || "";
+    return raw
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+  }
+
   function getCategoryBySlug(slug) {
     if (!site || !site.categories) return null;
     return site.categories.find(
-      (c) => c.slug === slug || c.slug?.toLowerCase() === slug?.toLowerCase()
+      (c) => c.slug?.toLowerCase() === slug?.toLowerCase()
     );
   }
 
@@ -23,16 +30,9 @@ export default apiInitializer("1.0", (api) => {
 
   function isCategoryRestricted(category) {
     if (!category) return false;
-
-    // Discourse permission levels:
-    // 1 = full (create topics, reply, see)
-    // 2 = reply + see
-    // 3 = see only (readonly)
-    // undefined/null = field not present, meaning user has access (Discourse omits it for accessible categories)
-    // 0 = explicitly no access (restricted, user cannot enter)
-    const permission = category.permission;
-
-    return permission === 0;
+    const slugs = getRestrictedSlugs();
+    if (slugs.length === 0) return false;
+    return slugs.includes(category.slug?.toLowerCase());
   }
 
   function buildPmSubject(categoryName) {
@@ -51,16 +51,13 @@ export default apiInitializer("1.0", (api) => {
     const composer = api.container.lookup("service:composer");
 
     if (composer) {
-      const params = {
-        action: "privateMessage",
-        title: buildPmSubject(categoryName),
-        body: buildPmBody(categoryName),
-      };
-
-      params.recipients = pmTarget;
-
       composer
-        .open(params)
+        .open({
+          action: "privateMessage",
+          title: buildPmSubject(categoryName),
+          body: buildPmBody(categoryName),
+          recipients: pmTarget,
+        })
         .catch(() => {
           fallbackToUrl(categoryName, pmTarget, useGroup);
         });
@@ -79,44 +76,35 @@ export default apiInitializer("1.0", (api) => {
     }
   }
 
-  function extractSlugAndIdFromPath(pathname) {
+  function extractInfoFromPath(pathname) {
     const parts = pathname.split("/").filter(Boolean);
     if (parts[0] !== "c") return null;
 
-    const result = {};
-
     const lastPart = parts[parts.length - 1];
     if (/^\d+$/.test(lastPart)) {
-      result.id = parseInt(lastPart, 10);
-      result.slug = parts[parts.length - 2] || parts[1];
-    } else {
-      result.slug = lastPart || parts[1];
+      return { id: parseInt(lastPart, 10), slug: parts[parts.length - 2] };
     }
-
-    return result;
+    return { slug: lastPart };
   }
 
   function resolveCategory(pathname) {
-    const info = extractSlugAndIdFromPath(pathname);
+    const info = extractInfoFromPath(pathname);
     if (!info) return null;
 
-    let category = null;
-
     if (info.id) {
-      category = getCategoryById(info.id);
+      const cat = getCategoryById(info.id);
+      if (cat) return cat;
     }
 
-    if (!category && info.slug) {
-      category = getCategoryBySlug(info.slug);
+    if (info.slug) {
+      return getCategoryBySlug(info.slug);
     }
 
-    return category;
+    return null;
   }
 
   document.addEventListener("click", function (e) {
-    const link = e.target.closest(
-      "a.category-title-link, a.badge-category, a.boxed-category, a[href*='/c/']"
-    );
+    const link = e.target.closest("a[href*='/c/']");
     if (!link || !link.href) return;
 
     let url;
@@ -129,9 +117,7 @@ export default apiInitializer("1.0", (api) => {
     if (url.origin !== window.location.origin) return;
 
     const category = resolveCategory(url.pathname);
-    if (!category) return;
-
-    if (!isCategoryRestricted(category)) return;
+    if (!category || !isCategoryRestricted(category)) return;
 
     e.preventDefault();
     e.stopPropagation();
@@ -143,29 +129,17 @@ export default apiInitializer("1.0", (api) => {
     if (!url.startsWith("/c/")) return;
 
     const category = resolveCategory(url);
-    if (!category) return;
-
-    if (!isCategoryRestricted(category)) return;
-
-    const settings = getSettings();
-    const pmTarget = settings.pmTarget || "moderators";
-    const useGroup = settings.useGroup !== false;
+    if (!category || !isCategoryRestricted(category)) return;
 
     const categoryName = category.name || category.slug;
+    const router = api.container.lookup("service:router");
 
-    const composer = api.container.lookup("service:composer");
-
-    if (composer) {
-      const router = api.container.lookup("service:router");
-      if (router) {
-        router.replaceWith("/");
-      }
-
-      setTimeout(() => {
-        openComposer(categoryName);
-      }, 300);
-    } else {
-      fallbackToUrl(categoryName, pmTarget, useGroup);
+    if (router) {
+      router.replaceWith("/");
     }
+
+    setTimeout(() => {
+      openComposer(categoryName);
+    }, 300);
   });
 });
