@@ -2,6 +2,11 @@ import { apiInitializer } from "discourse/lib/api";
 
 export default apiInitializer("1.0", (api) => {
   const site = api.container.lookup("service:site");
+  const currentUser = api.getCurrentUser();
+
+  function isStaff() {
+    return currentUser && (currentUser.admin || currentUser.moderator);
+  }
 
   function getRestrictedEntries() {
     const raw = settings.restricted_categories || "";
@@ -111,6 +116,7 @@ export default apiInitializer("1.0", (api) => {
 
     const category = resolveCategory(url.pathname);
     if (!category || !isCategoryRestricted(category)) return;
+    if (isStaff()) return;
 
     e.preventDefault();
     e.stopPropagation();
@@ -123,6 +129,7 @@ export default apiInitializer("1.0", (api) => {
 
     const category = resolveCategory(url);
     if (!category || !isCategoryRestricted(category)) return;
+    if (isStaff()) return;
 
     const categoryName = category.name || category.slug;
     const router = api.container.lookup("service:router");
