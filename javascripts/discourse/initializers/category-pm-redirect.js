@@ -47,15 +47,10 @@ export default apiInitializer("1.0", (api) => {
 
   function openComposer(categoryName) {
     const pmTarget = (settings.pm_target || "moderators").trim();
-    const useGroup = settings.use_group !== false;
     const title = encodeURIComponent(buildPmSubject(categoryName));
     const body = encodeURIComponent(buildPmBody(categoryName));
 
-    if (useGroup) {
-      window.location.href = `/new-message?groupname=${pmTarget}&title=${title}&body=${body}`;
-    } else {
-      window.location.href = `/new-message?username=${pmTarget}&title=${title}&body=${body}`;
-    }
+    window.location.href = `/new-message?username=${pmTarget}&title=${title}&body=${body}`;
   }
 
   function extractInfoFromPath(pathname) {

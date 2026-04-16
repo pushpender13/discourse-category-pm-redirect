@@ -3,10 +3,6 @@ restricted_categories:
   type: list
 
 pm_target:
-  default: "moderators"
+  default: "moderators,admin"
   type: string
-
-use_group:
-  default: true
-  type: bool
 
