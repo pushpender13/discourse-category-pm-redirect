@@ -10,6 +10,3 @@ use_group:
   default: true
   type: bool
 
-pm_fallback_target:
-  default: "moderators"
-  type: string
