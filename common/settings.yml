@@ -1,0 +1,14 @@
+restricted_categories:
+  default: "premium,private,vip"
+  type: list
+  description: "Category slugs to redirect"
+
+pm_target:
+  default: "moderators"
+  type: string
+  description: "Username or groupname to send PM"
+
+use_group:
+  default: true
+  type: bool
+  description: "Send PM to group instead of user"
