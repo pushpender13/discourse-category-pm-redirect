@@ -45,8 +45,18 @@ export default apiInitializer("1.0", (api) => {
     return `Hi,\n\nI would like to join ${categoryName}.\n\nPlease grant me access.\n\nThank you`;
   }
 
+  const SYSTEM_RESTRICTED_GROUPS = ["admins", "admin", "staff", "moderators"];
+
+  function resolveTarget() {
+    const raw = (settings.pm_target || "moderators").trim().toLowerCase();
+    if (SYSTEM_RESTRICTED_GROUPS.includes(raw) && raw !== "moderators") {
+      return (settings.pm_fallback_target || "moderators").trim();
+    }
+    return settings.pm_target.trim();
+  }
+
   function openComposer(categoryName) {
-    const pmTarget = settings.pm_target || "moderators";
+    const pmTarget = resolveTarget();
     const useGroup = settings.use_group !== false;
     const composer = api.container.lookup("service:composer");
 
