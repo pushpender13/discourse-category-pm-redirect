@@ -7,13 +7,13 @@ export default apiInitializer("1.0", (api) => {
     return window.categoryPmRedirectSettings || {};
   }
 
-  function getRestrictedIds() {
+  function getRestrictedEntries() {
     const settings = getSettings();
     const raw = settings.restrictedCategories || "";
     return raw
       .split("|")
-      .map((s) => parseInt(s.trim(), 10))
-      .filter((n) => !isNaN(n));
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
   }
 
   function getCategoryById(id) {
@@ -30,9 +30,11 @@ export default apiInitializer("1.0", (api) => {
 
   function isCategoryRestricted(category) {
     if (!category) return false;
-    const ids = getRestrictedIds();
-    if (ids.length === 0) return false;
-    return ids.includes(category.id);
+    const entries = getRestrictedEntries();
+    if (entries.length === 0) return false;
+    const idStr = String(category.id);
+    const slug = (category.slug || "").toLowerCase();
+    return entries.includes(idStr) || entries.includes(slug);
   }
 
   function buildPmSubject(categoryName) {

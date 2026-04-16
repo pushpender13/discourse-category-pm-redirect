@@ -1,6 +1,6 @@
 restricted_categories:
   default: ""
-  type: category_list
+  type: list
 
 pm_target:
   default: "moderators"
