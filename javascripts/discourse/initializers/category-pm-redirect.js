@@ -7,13 +7,18 @@ export default apiInitializer("1.0", (api) => {
     return window.categoryPmRedirectSettings || {};
   }
 
-  function getRestrictedSlugs() {
+  function getRestrictedIds() {
     const settings = getSettings();
     const raw = settings.restrictedCategories || "";
     return raw
-      .split(",")
-      .map((s) => s.trim().toLowerCase())
-      .filter(Boolean);
+      .split("|")
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => !isNaN(n));
+  }
+
+  function getCategoryById(id) {
+    if (!site || !site.categories) return null;
+    return site.categories.find((c) => c.id === id);
   }
 
   function getCategoryBySlug(slug) {
@@ -23,16 +28,11 @@ export default apiInitializer("1.0", (api) => {
     );
   }
 
-  function getCategoryById(id) {
-    if (!site || !site.categories) return null;
-    return site.categories.find((c) => c.id === parseInt(id, 10));
-  }
-
   function isCategoryRestricted(category) {
     if (!category) return false;
-    const slugs = getRestrictedSlugs();
-    if (slugs.length === 0) return false;
-    return slugs.includes(category.slug?.toLowerCase());
+    const ids = getRestrictedIds();
+    if (ids.length === 0) return false;
+    return ids.includes(category.id);
   }
 
   function buildPmSubject(categoryName) {
@@ -47,7 +47,6 @@ export default apiInitializer("1.0", (api) => {
     const settings = getSettings();
     const pmTarget = settings.pmTarget || "moderators";
     const useGroup = settings.useGroup !== false;
-
     const composer = api.container.lookup("service:composer");
 
     if (composer) {
@@ -58,9 +57,7 @@ export default apiInitializer("1.0", (api) => {
           body: buildPmBody(categoryName),
           recipients: pmTarget,
         })
-        .catch(() => {
-          fallbackToUrl(categoryName, pmTarget, useGroup);
-        });
+        .catch(() => fallbackToUrl(categoryName, pmTarget, useGroup));
     } else {
       fallbackToUrl(categoryName, pmTarget, useGroup);
     }
