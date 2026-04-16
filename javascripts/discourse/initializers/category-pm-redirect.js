@@ -48,25 +48,9 @@ export default apiInitializer("1.0", (api) => {
   function openComposer(categoryName) {
     const pmTarget = (settings.pm_target || "moderators").trim();
     const useGroup = settings.use_group !== false;
-    const composer = api.container.lookup("service:composer");
-
-    if (composer) {
-      composer
-        .open({
-          action: "privateMessage",
-          title: buildPmSubject(categoryName),
-          body: buildPmBody(categoryName),
-          recipients: pmTarget,
-        })
-        .catch(() => fallbackToUrl(categoryName, pmTarget, useGroup));
-    } else {
-      fallbackToUrl(categoryName, pmTarget, useGroup);
-    }
-  }
-
-  function fallbackToUrl(categoryName, pmTarget, useGroup) {
     const title = encodeURIComponent(buildPmSubject(categoryName));
     const body = encodeURIComponent(buildPmBody(categoryName));
+
     if (useGroup) {
       window.location.href = `/new-message?groupname=${pmTarget}&title=${title}&body=${body}`;
     } else {
