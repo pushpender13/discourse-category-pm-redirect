@@ -3,13 +3,8 @@ import { apiInitializer } from "discourse/lib/api";
 export default apiInitializer("1.0", (api) => {
   const site = api.container.lookup("service:site");
 
-  function getSettings() {
-    return window.categoryPmRedirectSettings || {};
-  }
-
   function getRestrictedEntries() {
-    const settings = getSettings();
-    const raw = settings.restrictedCategories || "";
+    const raw = settings.restricted_categories || "";
     return raw
       .split("|")
       .map((s) => s.trim().toLowerCase())
@@ -46,9 +41,8 @@ export default apiInitializer("1.0", (api) => {
   }
 
   function openComposer(categoryName) {
-    const settings = getSettings();
-    const pmTarget = settings.pmTarget || "moderators";
-    const useGroup = settings.useGroup !== false;
+    const pmTarget = settings.pm_target || "moderators";
+    const useGroup = settings.use_group !== false;
     const composer = api.container.lookup("service:composer");
 
     if (composer) {
