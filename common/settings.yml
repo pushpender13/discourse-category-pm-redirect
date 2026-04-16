@@ -1,14 +1,9 @@
-restricted_categories:
-  default: "premium,private,vip"
-  type: list
-  description: "Category slugs to redirect"
-
 pm_target:
   default: "moderators"
   type: string
-  description: "Username or groupname to send PM"
+  description: "Username or group name to receive join requests"
 
 use_group:
   default: true
   type: bool
-  description: "Send PM to group instead of user"
+  description: "If true, sends PM to a group; if false, sends PM to a specific username"
